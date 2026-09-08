@@ -1,0 +1,5 @@
+[
+  {"id":"AUD-001","assetId":"AST-1001","action":"RECOMMENDATION_CREATED","actor":"AI_DECISION_ENGINE","timestamp":"2026-09-01T10:15:00Z","details":{"decision":"REPAIR","confidence":0.84}},
+  {"id":"AUD-002","assetId":"AST-1002","action":"RECOMMENDATION_CREATED","actor":"AI_DECISION_ENGINE","timestamp":"2026-09-01T10:20:00Z","details":{"decision":"REDEPLOY","confidence":0.94}},
+  {"id":"AUD-003","assetId":"AST-1002","action":"APPROVAL_PENDING","actor":"HUMAN_REVIEW","timestamp":"2026-09-01T10:25:00Z","details":{"status":"PENDING"}}
+]

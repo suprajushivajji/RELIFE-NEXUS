@@ -1,0 +1,7 @@
+[
+  {"id":"DOC-001","name":"Epson EB-X06 User Manual","type":"MANUAL","assetCategory":"PROJECTOR","source":"Manufacturer Documentation","status":"READY_FOR_INGESTION"},
+  {"id":"DOC-002","name":"Institutional Electronics Maintenance Policy","type":"POLICY","assetCategory":"ALL","source":"Institutional Policy","status":"READY_FOR_INGESTION"},
+  {"id":"DOC-003","name":"Electronics End-of-Life Handling Guidance","type":"RECYCLING_GUIDANCE","assetCategory":"ALL","source":"Approved Sustainability Guidance","status":"READY_FOR_INGESTION"},
+  {"id":"DOC-004","name":"Dell P2422H User Guide","type":"MANUAL","assetCategory":"MONITOR","source":"Manufacturer Documentation","status":"READY_FOR_INGESTION"},
+  {"id":"DOC-005","name":"HP LaserJet Pro M404dn Manual","type":"MANUAL","assetCategory":"PRINTER","source":"Manufacturer Documentation","status":"READY_FOR_INGESTION"}
+]

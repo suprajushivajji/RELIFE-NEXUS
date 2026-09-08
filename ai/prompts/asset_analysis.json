@@ -1,0 +1,10 @@
+{
+  "name": "asset_analysis_prompt",
+  "version": "1.0",
+  "template": "You are an AI decision engine for ReLife Nexus...\nGiven the following asset details, determine the most sustainable lifecycle action.\nAsset Details: {{asset_details}}",
+  "variables": ["asset_details"],
+  "model_config": {
+    "temperature": 0.2,
+    "max_tokens": 1024
+  }
+}

@@ -1,0 +1,10 @@
+[
+  {"id":"MNT-001","assetId":"AST-1001","date":"2026-07-12","issue":"Poor image quality","action":"Lamp and lens inspection","result":"Cleaning recommended","cost":45,"technician":"Facilities Maintenance","status":"COMPLETED"},
+  {"id":"MNT-002","assetId":"AST-1006","date":"2026-06-20","issue":"Battery drains quickly","action":"Battery diagnostic","result":"Battery replacement recommended","cost":85,"technician":"IT Support","status":"PENDING"},
+  {"id":"MNT-003","assetId":"AST-1008","date":"2026-05-18","issue":"Frequent shutdown","action":"Thermal inspection","result":"Further technical inspection required","cost":60,"technician":"Facilities Maintenance","status":"PENDING"},
+  {"id":"MNT-004","assetId":"AST-1010","date":"2026-07-02","issue":"Paper feed jam","action":"Roller inspection","result":"Wear detected","cost":35,"technician":"Office Equipment Support","status":"COMPLETED"},
+  {"id":"MNT-005","assetId":"AST-1012","date":"2026-06-11","issue":"Display flickering","action":"Cable and display diagnostic","result":"Cause not confirmed","cost":20,"technician":"IT Support","status":"PENDING"},
+  {"id":"MNT-006","assetId":"AST-1014","date":"2026-04-15","issue":"Overheating","action":"Thermal diagnostic","result":"Requires professional inspection","cost":50,"technician":"IT Support","status":"PENDING"},
+  {"id":"MNT-007","assetId":"AST-1017","date":"2026-07-21","issue":"Display flickering","action":"Cable inspection","result":"Cable replacement suggested","cost":25,"technician":"IT Support","status":"COMPLETED"},
+  {"id":"MNT-008","assetId":"AST-1019","date":"2026-03-10","issue":"Electrical fault","action":"Safety inspection","result":"Unsafe for continued use","cost":30,"technician":"Facilities Maintenance","status":"COMPLETED"}
+]

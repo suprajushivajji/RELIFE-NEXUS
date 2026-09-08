@@ -1,0 +1,5 @@
+[
+  {"id":"IMP-001","assetId":"AST-1002","action":"REDEPLOY","procurementAvoided":220,"costDifference":180,"lifeExtensionMonths":18,"wasteAvoidedKg":null,"status":"ESTIMATED","assumptions":["Replacement cost estimated at 220 USD","Redeployment cost estimated at 40 USD","No disposal mass estimate used"]},
+  {"id":"IMP-002","assetId":"AST-1003","action":"REDEPLOY","procurementAvoided":220,"costDifference":180,"lifeExtensionMonths":18,"wasteAvoidedKg":null,"status":"ESTIMATED","assumptions":["Replacement cost estimated at 220 USD","Redeployment cost estimated at 40 USD"]},
+  {"id":"IMP-003","assetId":"AST-1004","action":"REDEPLOY","procurementAvoided":220,"costDifference":180,"lifeExtensionMonths":24,"wasteAvoidedKg":null,"status":"ESTIMATED","assumptions":["Replacement cost estimated at 220 USD","Redeployment cost estimated at 40 USD"]}
+]

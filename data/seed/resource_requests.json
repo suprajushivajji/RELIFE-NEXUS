@@ -1,0 +1,5 @@
+[
+  {"id":"REQ-001","department":"CSE","category":"MONITOR","quantity":3,"specifications":["24 inch","1920x1080","HDMI"],"urgency":"MEDIUM","requiredDate":"2026-09-20","reason":"New student workstation setup","status":"OPEN"},
+  {"id":"REQ-002","department":"Training","category":"PROJECTOR","quantity":1,"specifications":["HDMI","3000 lumens minimum"],"urgency":"HIGH","requiredDate":"2026-09-15","reason":"Training room replacement","status":"OPEN"},
+  {"id":"REQ-003","department":"Research","category":"LAPTOP","quantity":2,"specifications":["Intel i5","16GB RAM","512GB SSD"],"urgency":"MEDIUM","requiredDate":"2026-10-01","reason":"Research project equipment","status":"OPEN"}
+]
