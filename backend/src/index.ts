@@ -5,6 +5,7 @@ import requestRoutes from './routes/requestRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
 import impactRoutes from './routes/impactRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
+import responsibleAIRoutes from './routes/responsibleAIRoutes.js';
 import { config, integrationStatus } from './config.js';
 import { connectDatabase, databaseReady } from './db.js';
 
@@ -18,6 +19,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/impact', impactRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/responsible-ai', responsibleAIRoutes);
 
 app.get('/api/health', (req, res) => {
   const ready = databaseReady();

@@ -28,7 +28,14 @@ export function validateRecommendation(value: unknown) {
   if (typeof result.confidence !== 'number' || result.confidence < 0 || result.confidence > 1) throw new Error('AI response has an invalid confidence.');
   for (const field of ['reasons', 'evidence', 'alternatives', 'assumptions']) if (!Array.isArray(result[field])) throw new Error(`AI response field ${field} must be an array.`);
   if (typeof result.humanReviewRequired !== 'boolean') throw new Error('AI response humanReviewRequired must be boolean.');
-  return result as { decision: typeof actions[number]; confidence: number; reasons: string[]; evidence: { source: string; section: string; excerpt: string }[]; alternatives: string[]; assumptions: string[]; humanReviewRequired: boolean; safetyNote: string | null };
+  const evidence = (result.evidence as unknown[]).filter((item): item is { source: string; section: string; excerpt: string } => {
+    if (!item || typeof item !== 'object') return false;
+    const candidate = item as Record<string, unknown>;
+    return [candidate.source, candidate.section, candidate.excerpt].every(field => typeof field === 'string' && field.trim().length > 0);
+  });
+  const assumptions = [...(result.assumptions as string[])];
+  if (evidence.length !== (result.evidence as unknown[]).length) assumptions.push('Some AI evidence items were incomplete and were excluded; no citation was inferred.');
+  return { ...result, evidence, assumptions } as { decision: typeof actions[number]; confidence: number; reasons: string[]; evidence: { source: string; section: string; excerpt: string }[]; alternatives: string[]; assumptions: string[]; humanReviewRequired: boolean; safetyNote: string | null };
 }
 
 export function requestBody(req: Request) { return req.body as Record<string, unknown>; }

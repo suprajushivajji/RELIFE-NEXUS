@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx src/seed.ts",
     "smoke:ai": "tsx src/smoke-openrouter.ts",
+    "benchmark:models": "tsx src/benchmark-models.ts",
     "test": "npm run build && node --test dist/tests/validation.test.js"
   },
   "keywords": [],

@@ -55,7 +55,7 @@ export const analyzeAssetAction = async (req: Request, res: Response) => {
     res.json({ data: recommendation });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to analyze asset';
-    const status = /required|OpenRouter|validation|provider/i.test(message) ? 503 : 500;
+    const status = /required|OpenRouter|validation|provider|timed out|timeout/i.test(message) ? 503 : 500;
     res.status(status).json({ error: message });
   }
 };

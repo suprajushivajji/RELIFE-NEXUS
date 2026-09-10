@@ -13,3 +13,9 @@ test('request validation accepts a monitor request', () => {
 test('AI validation rejects unsupported decisions', () => {
   assert.throws(() => validateRecommendation({ decision: 'BUY', confidence: 1, reasons: [], evidence: [], alternatives: [], assumptions: [], humanReviewRequired: true }), /invalid decision/);
 });
+
+test('AI validation excludes incomplete evidence without inventing citations', () => {
+  const result = validateRecommendation({ decision: 'REPAIR', confidence: 0.8, reasons: ['Reported issue may be repairable.'], evidence: [{ source: 'Manual' }, { source: 'Policy', section: 'Safety', excerpt: 'Inspect professionally.' }], alternatives: [], assumptions: [], humanReviewRequired: true, safetyNote: null });
+  assert.equal(result.evidence.length, 1);
+  assert.match(result.assumptions.join(' '), /incomplete/);
+});
