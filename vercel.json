@@ -19,7 +19,7 @@
   ],
   "routes": [
     {
-      "src": "/api/(?!.*\\.json$)(.*)",
+      "src": "/api/(.*)",
       "dest": "/backend/api/index.ts"
     },
     {
