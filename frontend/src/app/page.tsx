@@ -1,72 +1,445 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-type Asset = { id: string; name: string; category: string; department: string; location: string; condition: string; usageStatus: string; lifecycleStatus: string };
-type RequestRecord = { id: string; department: string; category: string; quantity: number; specifications: string[]; urgency: string; status: string };
-type Match = { assetId: string; compatibilityScore: number; reasons: string[]; condition: string; location: string };
+// Components
+import { Sidebar, type Page } from "../components/navigation";
+import { Dashboard } from "../components/dashboard";
+import { AssetRegistry } from "../components/asset-registry";
+import { AnalyzeAsset } from "../components/analyze-asset";
+import { ResourceMatching } from "../components/resource-matching";
+import { ImpactPage } from "../components/impact";
+import { ResponsibleAIPage } from "../components/responsible-ai";
+
+// ============================================================
+// Types
+// ============================================================
+type Asset = {
+  id: string;
+  name: string;
+  category: string;
+  department: string;
+  location: string;
+  condition: string;
+  usageStatus: string;
+  lifecycleStatus: string;
+  brand?: string | null;
+  model?: string | null;
+  purchaseYear?: number;
+  replacementCost?: number | null;
+  reportedIssue?: string;
+  specs?: string[];
+  analyzed?: boolean;
+};
+
+type ResourceRequest = {
+  id: string;
+  department: string;
+  category: string;
+  quantity: number;
+  specifications: string[];
+  urgency: "LOW" | "MEDIUM" | "HIGH";
+  status: string;
+  createdAt: string;
+};
+
+type Match = {
+  assetId: string;
+  compatibilityScore: number;
+  reasons: string[];
+  condition: string;
+  location: string;
+};
+
 type ImpactMetric = { value: number | null; status: string };
-type Impact = { assetsCirculated: number; procurementAvoided: ImpactMetric; costDifference: ImpactMetric; lifeExtensionMonths: ImpactMetric; wasteAvoidedKg: ImpactMetric; assumptions: string[]; message: string };
-type ResponsibleAIInfo = { aiProvider: string; aiModel: string; aiFallbackModel: string; timeoutMs: number; maxRetries: number; guardrails: { fairness: string; transparency: string; privacy: string; safety: string; uncertainty: string; humanOversight: string; auditability: string }; supportedDecisions: string[]; humanOversightRequired: boolean; dataHandling: { sentToAI: string[]; notSentToAI: string[] } };
-type Recommendation = { id: string; decision: string; confidence: number; reasons: string[]; safetyNote: string | null; approvalStatus: string };
+type Impact = {
+  assetsCirculated: number;
+  procurementAvoided: ImpactMetric;
+  costDifference: ImpactMetric;
+  lifeExtensionMonths: ImpactMetric;
+  wasteAvoidedKg: ImpactMetric;
+  assumptions: string[];
+  message: string;
+};
 
-const api = process.env.NEXT_PUBLIC_API_URL ?? "";
-const nav = ["Overview", "Asset registry", "Resource matching", "Impact", "Responsible AI"];
+type ResponsibleAIInfo = {
+  aiProvider: string;
+  aiModel: string;
+  aiFallbackModel: string;
+  timeoutMs: number;
+  maxRetries: number;
+  guardrails: {
+    fairness: string;
+    transparency: string;
+    privacy: string;
+    safety: string;
+    uncertainty: string;
+    humanOversight: string;
+    auditability: string;
+  };
+  supportedDecisions: string[];
+  humanOversightRequired: boolean;
+  dataHandling: { sentToAI: string[]; notSentToAI: string[] };
+};
 
-export default function Home() {
-  const [active, setActive] = useState("Overview");
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [requests, setRequests] = useState<RequestRecord[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [impact, setImpact] = useState<Impact | null>(null);
-  const [responsibleAI, setResponsibleAI] = useState<ResponsibleAIInfo | null>(null);
-  const [selected, setSelected] = useState<Asset | null>(null);
-  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+type Recommendation = {
+  id: string;
+  assetId: string;
+  decision: string;
+  confidence: number;
+  reasons: string[];
+  evidence: Array<{ source: string; section: string; excerpt: string }>;
+  alternatives: string[];
+  assumptions: string[];
+  humanReviewRequired: boolean;
+  safetyNote: string | null;
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+};
 
-  async function loadAssets() {
-    try { const response = await fetch(`${api}/api/assets`); const payload = await response.json(); if (!response.ok || !Array.isArray(payload.data)) throw new Error(payload.error ?? "Unable to load assets."); setAssets(payload.data); }
-    catch (error) { setAssets([]); setMessage(error instanceof Error ? error.message : "Unable to load assets."); }
-  }
-  useEffect(() => { queueMicrotask(() => void loadAssets()); }, []);
-  const counts = useMemo(() => ({ active: assets.filter(a => a.usageStatus === "ACTIVE").length, available: assets.filter(a => a.lifecycleStatus === "AVAILABLE").length, review: assets.filter(a => a.lifecycleStatus === "UNDER_REVIEW").length }), [assets]);
+// ============================================================
+// API client
+// ============================================================
+const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-  async function openPanel(panel: string) { setActive(panel); setMessage(""); if (panel === "Resource matching") await loadMatching(); if (panel === "Impact") await loadImpact(); if (panel === "Responsible AI") await loadResponsibleAI(); }
-  async function loadMatching() {
-    setLoading(true);
-    try { const response = await fetch(`${api}/api/requests`); const payload = await response.json(); if (!response.ok || !Array.isArray(payload.data)) throw new Error(payload.error ?? "Unable to load requests."); setRequests(payload.data); const request = payload.data.find((item: RequestRecord) => item.category === "MONITOR") ?? payload.data[0]; if (!request) return; const matchResponse = await fetch(`${api}/api/requests/${request.id}/match`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); const matchPayload = await matchResponse.json(); if (!matchResponse.ok) throw new Error(matchPayload.error ?? "Matching failed."); setMatches(matchPayload.data?.matches ?? []); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Resource matching failed."); } finally { setLoading(false); }
-  }
-  async function loadImpact() {
-    setLoading(true);
-    try { const response = await fetch(`${api}/api/impact/summary`); const payload = await response.json(); if (!response.ok || !payload.data) throw new Error(payload.error ?? "Unable to load impact."); setImpact(payload.data); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Impact loading failed."); } finally { setLoading(false); }
-  }
-  async function loadResponsibleAI() {
-    setLoading(true);
-    try { const response = await fetch(`${api}/api/responsible-ai/info`); const payload = await response.json(); if (!response.ok || !payload.data) throw new Error(payload.error ?? "Unable to load responsible AI information."); setResponsibleAI(payload.data); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Responsible AI loading failed."); } finally { setLoading(false); }
-  }
-  async function analyze(asset: Asset) {
-    setSelected(asset); setRecommendation(null); setMessage("Analyzing with OpenRouter...");
-    try { const response = await fetch(`${api}/api/assets/${asset.id}/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); const payload = await response.json(); if (!response.ok || !payload.data) throw new Error(payload.error ?? "Analysis failed."); setRecommendation(payload.data); setMessage("Analysis complete. Human review is required."); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Analysis failed."); }
-  }
-  async function approve() {
-    if (!recommendation) return;
-    try { const response = await fetch(`${api}/api/recommendations/${recommendation.id}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); const payload = await response.json(); if (!response.ok || !payload.data) throw new Error(payload.error ?? "Approval failed."); setRecommendation(payload.data); setMessage("Approval recorded in the audit log."); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "Approval failed."); }
-  }
-
-  return <main className="app-shell"><aside className="sidebar"><div className="brand"><div className="brand-mark">RN</div><div><strong>ReLife</strong><span>NEXUS</span></div></div><div className="workspace-label">WORKSPACE</div><nav>{nav.map((item, index) => <button className={active === item ? "nav-item active" : "nav-item"} onClick={() => void openPanel(item)} key={item}><span className="nav-icon">{["+", "[]", "↗", "◒", "◎"][index]}</span>{item}</button>)}</nav><div className="sidebar-foot"><div><i className="system-dot" />MongoDB connected</div><div className="sdg">SDG 12 <span>Responsible consumption</span></div></div></aside><section className="content"><header className="topbar"><div><div className="eyebrow">INSTITUTIONAL RESOURCE INTELLIGENCE</div><h1>{active === "Overview" ? "Good morning, operations team." : active}</h1></div><span className="demo-tag">SYNTHETIC DATA</span></header>{message && <div className="notice" role="status">{message}</div>}{loading && <div className="loading-state">Loading live backend data...</div>}{active === "Overview" && <Overview assets={assets} counts={counts} onAnalyze={analyze} onOpen={openPanel} />}{active === "Asset registry" && <><Heading eyebrow="INVENTORY" title="Asset registry" /><AssetTable assets={assets} onAnalyze={analyze} /></>}{active === "Resource matching" && <Matching requests={requests} matches={matches} onRefresh={loadMatching} />}{active === "Impact" && <ImpactPanel impact={impact} onRefresh={loadImpact} />}{active === "Responsible AI" && <ResponsibleAI info={responsibleAI} />}</section>{selected && <div className="modal-backdrop" onClick={() => setSelected(null)}><div className="decision-modal" onClick={event => event.stopPropagation()}><button className="close" onClick={() => setSelected(null)}>×</button><div className="eyebrow">AI DECISION · {selected.id}</div><h2>{selected.name}</h2>{recommendation && <><div className="decision-banner"><div><span>RECOMMENDATION</span><strong>{recommendation.decision}</strong></div><b>{Math.round(recommendation.confidence * 100)}%</b></div><ul>{recommendation.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>{recommendation.safetyNote && <div className="safety">{recommendation.safetyNote}</div>}<button className="dark-button full" onClick={() => void approve()}>Approve decision →</button></>}</div></div>}</main>;
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API}${url}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload.error ?? `Request failed: ${res.status}`);
+  return payload.data as T;
 }
 
-function Heading({ eyebrow, title }: { eyebrow: string; title: string }) { return <div className="section-heading"><div><div className="eyebrow">{eyebrow}</div><h2>{title}</h2></div></div>; }
-function Overview({ assets, counts, onAnalyze, onOpen }: { assets: Asset[]; counts: { active: number; available: number; review: number }; onAnalyze: (asset: Asset) => void; onOpen: (panel: string) => void }) { return <><div className="signal"><strong>{counts.available} assets available for circular reuse</strong><span>Live counts from MongoDB inventory</span><button onClick={() => void onOpen("Resource matching")}>Find matches →</button></div><section className="metric-grid"><Metric label="Total assets" value={assets.length} note="Database records" /><Metric label="Active assets" value={counts.active} note="Currently in service" /><Metric label="Available to reuse" value={counts.available} note="Ready for matching" accent /><Metric label="Under review" value={counts.review} note="Human decision needed" /></section><Heading eyebrow="INVENTORY PULSE" title="Recent assets" /><AssetTable assets={assets.slice(0, 8)} onAnalyze={onAnalyze} /></>; }
-function Metric({ label, value, note, accent = false }: { label: string; value: number; note: string; accent?: boolean }) { return <article className={accent ? "metric accent" : "metric"}><span>{label}</span><strong>{value}</strong><small>{note}</small></article>; }
-function AssetTable({ assets, onAnalyze }: { assets: Asset[]; onAnalyze: (asset: Asset) => void }) { return <div className="table-wrap"><table><thead><tr><th>Asset</th><th>Category</th><th>Location</th><th>Condition</th><th>Status</th><th /></tr></thead><tbody>{assets.map(asset => <tr key={asset.id}><td><strong>{asset.name}</strong><small>{asset.id} · {asset.department}</small></td><td>{asset.category}</td><td>{asset.location}</td><td><span className={`condition ${asset.condition.toLowerCase()}`}>{asset.condition}</span></td><td>{asset.lifecycleStatus.replace("_", " ")}</td><td><button className="row-action" onClick={() => onAnalyze(asset)}>Analyze →</button></td></tr>)}</tbody></table></div>; }
-function Matching({ requests, matches, onRefresh }: { requests: RequestRecord[]; matches: Match[]; onRefresh: () => Promise<void> }) { const request = requests[0]; return <><Heading eyebrow="INVENTORY SEARCH" title="Resource matching" /><div className="workflow-toolbar"><div><strong>{request ? `${request.department} requests ${request.quantity} ${request.category.toLowerCase()}s` : "No open requests"}</strong><span>{request?.specifications.join(" · ")}</span></div><button className="outline-button" onClick={() => void onRefresh()}>Refresh matches →</button></div><div className="match-summary"><strong>{matches.length}</strong><span>compatible assets found in institutional inventory</span></div><div className="match-list">{matches.map(match => <article className="match-card" key={match.assetId}><div><strong>{match.assetId}</strong><span>{match.condition} · {match.location}</span></div><b>{Math.round(match.compatibilityScore * 100)}%</b><ul>{match.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></article>)}</div></>; }
-function ImpactPanel({ impact, onRefresh }: { impact: Impact | null; onRefresh: () => Promise<void> }) { return <><Heading eyebrow="MEASURED & ESTIMATED" title="Impact" /><button className="outline-button refresh-impact" onClick={() => void onRefresh()}>Refresh impact →</button>{impact && <><div className="metric-grid impact-grid"><Metric label="Assets circulated" value={impact.assetsCirculated} note="MEASURED" /><Metric label="Procurement avoided" value={impact.procurementAvoided?.value ?? 0} note={impact.procurementAvoided?.value === null ? "Unavailable" : `${impact.procurementAvoided?.status ?? "UNAVAILABLE"} USD`} accent /><Metric label="Cost difference" value={impact.costDifference?.value ?? 0} note={impact.costDifference?.value === null ? "Unavailable" : `${impact.costDifference?.status ?? "UNAVAILABLE"} USD`} /><Metric label="Lifecycle extension" value={impact.lifeExtensionMonths?.value ?? 0} note={impact.lifeExtensionMonths?.value === null ? "Unavailable" : `${impact.lifeExtensionMonths?.status ?? "UNAVAILABLE"} months`} /><Metric label="Waste avoided" value={impact.wasteAvoidedKg?.value ?? 0} note={impact.wasteAvoidedKg?.value === null ? "Unavailable" : `${impact.wasteAvoidedKg?.status ?? "UNAVAILABLE"} kg`} accent /></div><p className="impact-message">{impact.message}</p><h3>Assumptions</h3><ul className="assumptions">{impact.assumptions.map(item => <li key={item}>{item}</li>)}</ul></>}</>; }
-function ResponsibleAI({ info }: { info: ResponsibleAIInfo | null }) { if (!info) return <div className="loading-state">Loading responsible AI information...</div>; return <><Heading eyebrow="GOVERNANCE & EVIDENCE" title="Responsible AI" /><div className="info-grid"><Info title="Fairness">{info.guardrails.fairness}</Info><Info title="Transparency">{info.guardrails.transparency}</Info><Info title="Human oversight">{info.guardrails.humanOversight}</Info><Info title="Privacy">{info.guardrails.privacy}</Info><Info title="Uncertainty">{info.guardrails.uncertainty}</Info><Info title="Safety">{info.guardrails.safety}</Info><Info title="Auditability">{info.guardrails.auditability}</Info></div><div className="section-heading"><h3>System Configuration</h3></div><div className="config-grid"><div><strong>AI Provider</strong><span>{info.aiProvider}</span></div><div><strong>Model</strong><span>{info.aiModel}</span></div><div><strong>Fallback Model</strong><span>{info.aiFallbackModel}</span></div><div><strong>Timeout</strong><span>{info.timeoutMs}ms</span></div><div><strong>Max Retries</strong><span>{info.maxRetries}</span></div><div><strong>Human Oversight Required</strong><span>{info.humanOversightRequired ? "Yes" : "No"}</span></div></div><div className="section-heading"><h3>Data Handling</h3></div><div className="data-handling"><div><strong>Sent to AI:</strong><ul>{info.dataHandling.sentToAI.map(item => <li key={item}>{item}</li>)}</ul></div><div><strong>Not Sent to AI:</strong><ul>{info.dataHandling.notSentToAI.map(item => <li key={item}>{item}</li>)}</ul></div></div></>; }
-function Info({ title, children }: { title: string; children: string }) { return <article className="info-card"><h3>{title}</h3><p>{children}</p></article>; }
+// ============================================================
+// Page transition wrapper
+// ============================================================
+function PageTransition({ children, pageKey }: { children: React.ReactNode; pageKey: string }) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={pageKey}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ============================================================
+// Toast notification
+// ============================================================
+function Toast({ message, type, onClose }: { message: string; type: "success" | "error" | "info"; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  const colors = {
+    success: { bg: "var(--emerald-soft)", border: "var(--border-accent)", text: "var(--emerald)" },
+    error:   { bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)", text: "#f87171" },
+    info:    { bg: "var(--ai-glow)", border: "rgba(96,165,250,0.3)", text: "var(--ai-blue)" },
+  };
+  const cfg = colors[type];
+
+  return (
+    <motion.div
+      className="flex items-start gap-3 px-4 py-3 rounded-xl max-w-sm pointer-events-auto"
+      style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}
+      initial={{ opacity: 0, y: 16, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+    >
+      <p className="text-sm flex-1" style={{ color: cfg.text }}>{message}</p>
+      <button onClick={onClose} style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1 }}>×</button>
+    </motion.div>
+  );
+}
+
+// ============================================================
+// Main App
+// ============================================================
+export default function Home() {
+  const [activePage, setActivePage] = useState<Page>("Dashboard");
+
+  // Data state
+  const [assets, setAssets]               = useState<Asset[]>([]);
+  const [requests, setRequests]           = useState<ResourceRequest[]>([]);
+  const [matches, setMatches]             = useState<Match[]>([]);
+  const [impact, setImpact]               = useState<Impact | null>(null);
+  const [responsibleAI, setResponsibleAI] = useState<ResponsibleAIInfo | null>(null);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [analyzeTarget, setAnalyzeTarget] = useState<Asset | null>(null);
+
+  // Loading states
+  const [assetsLoading,   setAssetsLoading]   = useState(false);
+  const [matchingLoading, setMatchingLoading] = useState(false);
+  const [impactLoading,   setImpactLoading]   = useState(false);
+  const [raiLoading,      setRaiLoading]      = useState(false);
+  const [analyzing,       setAnalyzing]       = useState(false);
+  const [approving,       setApproving]       = useState(false);
+
+  // Error states
+  const [matchingError, setMatchingError] = useState<string | null>(null);
+  const [analyzeError,  setAnalyzeError]  = useState<string | null>(null);
+
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+  const showToast = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ message, type });
+  }, []);
+
+  // ============================================================
+  // Data loaders
+  // ============================================================
+  const loadAssets = useCallback(async () => {
+    if (assetsLoading) return;
+    setAssetsLoading(true);
+    try {
+      const data = await apiFetch<Asset[]>("/api/assets");
+      setAssets(data);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Unable to load assets.", "error");
+    } finally {
+      setAssetsLoading(false);
+    }
+  }, [assetsLoading, showToast]);
+
+  const loadMatching = useCallback(async () => {
+    setMatchingLoading(true);
+    setMatchingError(null);
+    try {
+      const reqs = await apiFetch<ResourceRequest[]>("/api/requests");
+      setRequests(reqs);
+      const req = reqs.find((r: ResourceRequest) => r.category === "MONITOR") ?? reqs[0];
+      if (!req) { setMatches([]); return; }
+      const matchData = await apiFetch<{ matches: Match[] }>(`/api/requests/${req.id}/match`, { method: "POST", body: "{}" });
+      setMatches(matchData.matches ?? []);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Resource matching failed.";
+      setMatchingError(msg);
+      showToast(msg, "error");
+    } finally {
+      setMatchingLoading(false);
+    }
+  }, [showToast]);
+
+  const loadImpact = useCallback(async () => {
+    setImpactLoading(true);
+    try {
+      const data = await apiFetch<Impact>("/api/impact/summary");
+      setImpact(data);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Impact loading failed.", "error");
+    } finally {
+      setImpactLoading(false);
+    }
+  }, [showToast]);
+
+  const loadResponsibleAI = useCallback(async () => {
+    setRaiLoading(true);
+    try {
+      const data = await apiFetch<ResponsibleAIInfo>("/api/responsible-ai/info");
+      setResponsibleAI(data);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Responsible AI loading failed.", "error");
+    } finally {
+      setRaiLoading(false);
+    }
+  }, [showToast]);
+
+  // ============================================================
+  // Analyze asset
+  // ============================================================
+  const analyzeAsset = useCallback(async (asset: Asset) => {
+    setAnalyzing(true);
+    setAnalyzeError(null);
+    setRecommendation(null);
+    try {
+      const data = await apiFetch<Recommendation>(`/api/assets/${asset.id}/analyze`, { method: "POST", body: "{}" });
+      setRecommendation(data);
+      showToast("Analysis complete. Human review is required.", "success");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Analysis failed.";
+      setAnalyzeError(msg);
+      showToast(msg, "error");
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [showToast]);
+
+  // ============================================================
+  // Approve recommendation
+  // ============================================================
+  const approveRecommendation = useCallback(async () => {
+    if (!recommendation) return;
+    setApproving(true);
+    try {
+      const data = await apiFetch<Recommendation>(`/api/recommendations/${recommendation.id}/approve`, { method: "POST", body: "{}" });
+      setRecommendation(data);
+      showToast("Approval recorded in the audit log.", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Approval failed.", "error");
+    } finally {
+      setApproving(false);
+    }
+  }, [recommendation, showToast]);
+
+  // ============================================================
+  // Navigation handler — lazy-load page data
+  // ============================================================
+  const navigate = useCallback((page: Page) => {
+    setActivePage(page);
+    if (page === "Resource Matching" && requests.length === 0) {
+      void loadMatching();
+    }
+    if (page === "Impact" && !impact) {
+      void loadImpact();
+    }
+    if (page === "Responsible AI" && !responsibleAI) {
+      void loadResponsibleAI();
+    }
+  }, [requests.length, impact, responsibleAI, loadMatching, loadImpact, loadResponsibleAI]);
+
+  // Navigate to analyze page with a pre-selected asset
+  const openAnalyze = useCallback((asset: Asset) => {
+    setAnalyzeTarget(asset);
+    setRecommendation(null);
+    setAnalyzeError(null);
+    setActivePage("Analyze Asset");
+  }, []);
+
+  // Initial load — fetch assets on mount
+  useEffect(() => {
+    async function init() {
+      setAssetsLoading(true);
+      try {
+        const data = await apiFetch<Asset[]>("/api/assets");
+        setAssets(data);
+      } catch (err) {
+        // toast is available via closure but we skip it here to avoid setState cascade
+        console.error("Failed to load assets on mount:", err);
+      } finally {
+        setAssetsLoading(false);
+      }
+    }
+    void init();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ============================================================
+  // Render
+  // ============================================================
+  return (
+    <div
+      className="flex min-h-screen"
+      style={{ background: "var(--bg-base)" }}
+    >
+      {/* Sidebar */}
+      <Sidebar active={activePage} onNavigate={navigate} />
+
+      {/* Main content */}
+      <main className="flex-1 min-w-0 flex flex-col">
+        {/* Top bar */}
+        <div
+          className="sticky top-0 z-10 flex items-center justify-between px-6 md:px-8 h-16 shrink-0"
+          style={{ background: "rgba(10,15,13,0.85)", borderBottom: "1px solid var(--border)", backdropFilter: "blur(12px)" }}
+        >
+          <div className="flex items-center gap-3 pl-10 md:pl-0">
+            <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{activePage}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+              style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--emerald)" }} />
+              Live data
+            </div>
+          </div>
+        </div>
+
+        {/* Page content */}
+        <div className="flex-1 px-6 md:px-8 py-8 max-w-6xl mx-auto w-full">
+          <PageTransition pageKey={activePage}>
+            {activePage === "Dashboard" && (
+              <Dashboard
+                assets={assets}
+                loading={assetsLoading}
+                onAnalyze={openAnalyze}
+                onNavigate={(page: string) => navigate(page as Page)}
+              />
+            )}
+
+            {activePage === "Asset Registry" && (
+              <AssetRegistry
+                assets={assets}
+                loading={assetsLoading}
+                onAnalyze={openAnalyze}
+              />
+            )}
+
+            {activePage === "Analyze Asset" && (
+              <AnalyzeAsset
+                assets={assets}
+                preSelected={analyzeTarget}
+                onAnalyze={analyzeAsset}
+                onApprove={approveRecommendation}
+                recommendation={recommendation}
+                analyzing={analyzing}
+                approving={approving}
+                error={analyzeError}
+                onClearError={() => setAnalyzeError(null)}
+              />
+            )}
+
+            {activePage === "Resource Matching" && (
+              <ResourceMatching
+                requests={requests}
+                matches={matches}
+                loading={matchingLoading}
+                error={matchingError}
+                onRefresh={loadMatching}
+              />
+            )}
+
+            {activePage === "Impact" && (
+              <ImpactPage
+                impact={impact}
+                assets={assets}
+                loading={impactLoading}
+                onRefresh={loadImpact}
+              />
+            )}
+
+            {activePage === "Responsible AI" && (
+              <ResponsibleAIPage
+                info={responsibleAI}
+                loading={raiLoading}
+              />
+            )}
+          </PageTransition>
+        </div>
+      </main>
+
+      {/* Toast */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+        <AnimatePresence>
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
