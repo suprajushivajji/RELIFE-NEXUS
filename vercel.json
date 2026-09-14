@@ -9,18 +9,5 @@
       "source": "/(.*)",
       "destination": "/$1"
     }
-  ],
-  "ignore": [
-    "src/",
-    "backend/",
-    "data/",
-    "ai/",
-    "knowledge-base/",
-    ".vercel/",
-    ".netlify/",
-    "*.md",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "netlify.toml"
   ]
 }
