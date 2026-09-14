@@ -12,3 +12,6 @@ frontend/.env.local
 backend/api/*.js
 backend/api/*.map
 backend/api/*.d.ts
+
+# Netlify CLI artifacts
+.netlify/
