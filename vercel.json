@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
+  "devCommand": "cd frontend && next dev",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ],
+  "ignore": [
+    "src/",
+    "backend/",
+    "data/",
+    "ai/",
+    "knowledge-base/",
+    ".vercel/",
+    ".netlify/",
+    "*.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "netlify.toml"
+  ]
+}
