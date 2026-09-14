@@ -1,0 +1,42 @@
+# Vercel ignore file
+# Use ! to UNIGNORE paths
+
+# Ignore everything
+*
+
+# Except frontend directory
+!frontend/
+
+# But within frontend, we can have more specific ignores
+frontend/node_modules/
+frontend/.next/
+frontend/package-lock.json
+
+# Also ignore root-level directories
+src/
+backend/
+data/
+ai/
+knowledge-base/
+
+# Ignore config files for other platforms
+netlify.toml
+
+# Ignore documentation
+*.md
+AGENTS.md
+CLAUDE.md
+
+# Ignore IDE and git files
+.git/
+node_modules/
+
+# Ignore build artifacts at root
+.next/
+dist/
+
+# Ignore env files
+.env
+.env.local
+.env.*
+!.env.example
