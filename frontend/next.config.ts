@@ -1,11 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Fix for Vercel deployment fsPath error
   reactStrictMode: true,
-  // Disable telemetry
   productionBrowserSourceMaps: false,
-  // Images configuration - use remotePatterns for security
   images: {
     remotePatterns: [
       {
@@ -13,6 +10,11 @@ const nextConfig: NextConfig = {
         hostname: 'relife-nexus.onrender.com',
       },
     ],
+  },
+  // Expose environment variables to the browser
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "https://relife-nexus.onrender.com",
+    BACKEND_URL: process.env.BACKEND_URL ?? "https://relife-nexus.onrender.com/api",
   },
 };
 
