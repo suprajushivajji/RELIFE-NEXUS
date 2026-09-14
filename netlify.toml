@@ -5,9 +5,8 @@
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
-  # Update these with your actual backend URL in Netlify dashboard
-  NEXT_PUBLIC_API_URL = "https://your-backend-url.com"
-  BACKEND_URL = "https://your-backend-url.com/api"
+  NEXT_PUBLIC_API_URL = "https://relife-nexus.onrender.com"
+  BACKEND_URL = "https://relife-nexus.onrender.com/api"
 
 [[redirects]]
   from = "/api/*"
