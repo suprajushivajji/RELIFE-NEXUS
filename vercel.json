@@ -1,13 +1,9 @@
 {
   "version": 2,
-  "installCommand": "cd frontend && npm install",
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/.next",
-  "devCommand": "cd frontend && next dev",
-  "rewrites": [
+  "projects": [
     {
-      "source": "/(.*)",
-      "destination": "/$1"
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
     }
   ]
 }
