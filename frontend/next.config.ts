@@ -5,24 +5,14 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Disable telemetry
   productionBrowserSourceMaps: false,
-  // Optimized images (if using next/image)
+  // Images configuration - use remotePatterns for security
   images: {
-    domains: ['relife-nexus.onrender.com'],
-    formats: ['image/avif', 'image/webp'],
-  },
-  // ESLint strict mode
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
-  // TypeScript strict mode
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-  // Logging
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'relife-nexus.onrender.com',
+      },
+    ],
   },
 };
 
